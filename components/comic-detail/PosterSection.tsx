@@ -1,0 +1,44 @@
+import { Comic } from "@/types";
+import { Star } from "lucide-react";
+
+export function PosterSection({ comic }: { comic: Comic }) {
+  return (
+    <div className="flex gap-4 md:block">
+      <div className="w-1/3 sm:w-1/4 md:w-full shrink-0">
+        <div className="relative aspect-[3/4] rounded-xl lg:rounded-[2.5rem] overflow-hidden border-2 lg:border-8 border-slate-100/10 shadow-2xl">
+          <img 
+            src={comic.cover_url} 
+            alt={comic.title}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        </div>
+      </div>
+      
+      {/* Mobile Title & Quick Info (Hidden on md+) */}
+      <div className="flex-1 md:hidden space-y-2 py-1">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tighter text-slate-100 leading-tight line-clamp-3">
+          {comic.title}
+        </h1>
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[9px] font-bold uppercase tracking-widest border border-emerald-500/20">
+            {comic.status}
+          </span>
+          <p className="text-slate-400 font-medium text-xs line-clamp-1">
+            {comic.title} (Official), {comic.title} (Raw)
+          </p>
+        </div>
+        <p className="text-slate-400 font-medium text-xs sm:text-sm line-clamp-1 mt-1">
+          {comic.author}
+        </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-yellow-500">
+            <Star className="w-3 h-3 fill-current" />
+            {comic.rating}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
