@@ -43,11 +43,53 @@ function TimeAgo({ dateString }: { dateString: string }) {
 
 interface MangaCardProps {
   comic: Comic;
-  variant?: "default" | "compact" | "long" | "ranking" | "browse";
+  variant?: "default" | "compact" | "long" | "ranking" | "browse" | "update";
   index?: number;
 }
 
 export function MangaCard({ comic, variant = "default", index = 0 }: MangaCardProps) {
+  if (variant === "update") {
+    return (
+      <div className="flex flex-col group w-full mb-4 lg:mb-0">
+        <Link href={`/comic/${comic.id}`} className="relative aspect-[3/4] w-full rounded-xl overflow-hidden mb-3">
+          <img 
+            src={comic.cover_url} 
+            alt={comic.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            referrerPolicy="no-referrer"
+          />
+          {/* Gradient Overlay for rating */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100"></div>
+          {/* Rating */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-yellow-500 text-[10px] font-bold">
+            <Star className="w-3 h-3 fill-current" />
+            {comic.rating}
+          </div>
+        </Link>
+        <Link href={`/comic/${comic.id}`}>
+          <h3 className="font-semibold text-sm sm:text-base text-slate-100 group-hover:text-sky-500 transition-colors line-clamp-2 md:line-clamp-1 mb-2">
+            {comic.title}
+          </h3>
+        </Link>
+        <div className="flex flex-col gap-1.5">
+          {comic.chapters?.slice(0, 2).map((chapter) => (
+            <Link 
+              key={chapter.id} 
+              href={`/comic/${comic.id}/chapter/${chapter.chapter_number}`}
+              className="flex items-center justify-between bg-white/5 hover:bg-sky-500/20 px-2 py-1.5 rounded transition-colors text-[11px] sm:text-xs text-slate-300 hover:text-sky-400 font-medium"
+            >
+              <span className="truncate">Ch. {chapter.chapter_number}</span>
+              <TimeAgo dateString={chapter.created_at} />
+            </Link>
+          ))}
+          {(!comic.chapters || comic.chapters.length === 0) && (
+             <div className="text-[11px] text-slate-500 italic px-2">No chapters yet</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (variant === "long") {
     return (
       <div>

@@ -1,11 +1,13 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Star, Play, Bookmark } from "lucide-react";
+import { Star, Play, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { Comic } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,122 +18,150 @@ interface HeroProps {
 }
 
 export default function Hero({ comics }: HeroProps) {
-  const [featuredIndex, setFeaturedIndex] = useState(0);
   const featuredComics = comics.slice(0, 5);
-  const featured = featuredComics[featuredIndex] || featuredComics[0];
+  
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5000, stopOnInteraction: false })]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  if (!featured) return null;
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi, setSelectedIndex]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+  }, [emblaApi, onSelect]);
+
+  if (!featuredComics.length) return null;
 
   return (
-    <section className="relative min-h-[40vh] lg:min-h-[60vh] w-full overflow-hidden flex items-center">
-      {/* Background Layer */}
-      <div className="absolute inset-0 z-0">
+    <section className="relative min-h-[50vh] lg:min-h-[70vh] w-full overflow-hidden flex items-end lg:items-center bg-black">
+      {/* Dynamic Background Layer */}
+      <div className="absolute inset-0 z-0 transition-all duration-700">
         <img
-          src={featured.cover_url}
-          alt={featured.title}
-          className="w-full h-full object-cover blur-[2px] opacity-40"
+          src={featuredComics[selectedIndex].cover_url}
+          alt={featuredComics[selectedIndex].title}
+          className="w-full h-full object-cover blur-xl lg:blur-[40px] opacity-40 scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(14,165,233,0.15)_0%,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent lg:bg-gradient-to-r lg:from-black lg:via-black/90 lg:to-transparent/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center pt-20 md:pt-24 lg:pt-12 pb-8 lg:pb-12">
-        {/* Content Area */}
-        <div className="lg:col-span-7 space-y-6 lg:space-y-10">
+      {/* Carousel Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 lg:px-6 pt-24 pb-12 lg:py-16">
+        <div className="overflow-hidden rounded-2xl lg:rounded-none" ref={emblaRef}>
+          <div className="flex touch-pan-y">
+            {featuredComics.map((featured, index) => (
+              <div key={featured.id} className="flex-[0_0_100%] min-w-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+                  
+                  {/* Content Area */}
+                  <div className="lg:col-span-7 space-y-4 lg:space-y-8 order-2 lg:order-1 pt-6 lg:pt-0">
+                    <div className="space-y-3 lg:space-y-4">
+                      {/* Tags & Rating */}
+                      <div className="flex flex-wrap gap-2 lg:gap-3">
+                        <span className="px-2 py-1 lg:px-3 lg:py-1 rounded bg-sky-500 text-[10px] lg:text-xs font-bold uppercase text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]">
+                          HOT
+                        </span>
+                        {(featured.genres || "").split(',').slice(0, 3).map((genre, i) => (
+                          <span key={i} className="px-2 py-1 lg:px-3 lg:py-1 rounded bg-white/10 backdrop-blur-md border border-white/10 text-[10px] lg:text-xs font-semibold uppercase text-zinc-300">
+                            {genre.trim()}
+                          </span>
+                        ))}
+                        <span className="px-2 py-1 lg:px-3 lg:py-1 rounded bg-yellow-500/20 backdrop-blur-md border border-yellow-500/30 text-[10px] lg:text-xs font-bold text-yellow-500 flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" />
+                          {featured.rating}
+                        </span>
+                      </div>
 
-          <div className="space-y-4 lg:space-y-6">
-            <div className="flex flex-wrap gap-2 lg:gap-3">
-              {(featured.genres || "").split(',').map((genre, i) => (
-                <span key={i} className="px-3 py-1 lg:px-4 lg:py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-slate-300 hover:text-slate-100 hover:bg-slate-700/50 transition-all cursor-default">
-                  {genre.trim()}
-                </span>
-              ))}
-              <span className="px-3 py-1 lg:px-4 lg:py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-yellow-500 flex items-center gap-1.5 lg:gap-2">
-                <Star className="w-3 h-3 fill-current" />
-                {featured.rating}
-              </span>
-            </div>
+                      {/* Title */}
+                      <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-white line-clamp-2">
+                        {featured.title}
+                      </h1>
+                    </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-display font-bold leading-tight tracking-tighter text-slate-100 line-clamp-2 lg:line-clamp-1">
-              {featured.title}
-            </h1>
-          </div>
+                    {/* Description */}
+                    <div className="relative border-l-2 border-sky-500/50 pl-4 lg:pl-6 hidden sm:block">
+                      <p className="text-zinc-400 text-sm lg:text-base max-w-2xl leading-relaxed line-clamp-3">
+                        {featured.description}
+                      </p>
+                    </div>
 
-          <div className="relative">
-            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-sky-500/20"></div>
-            <p className="text-slate-300 text-sm md:text-lg lg:text-xl max-w-xl leading-relaxed font-medium pl-6 line-clamp-2 lg:line-clamp-3">
-              {featured.description}
-            </p>
-          </div>
+                    {/* Actions */}
+                    <div className="flex flex-wrap items-center gap-3 lg:gap-6 pt-2 lg:pt-4">
+                      <Link
+                        href={/comic/ + featured.id}
+                        className="group flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-full font-bold text-sm lg:text-base transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_10px_30px_rgba(14,165,233,0.3)]"
+                      >
+                        <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current" />
+                        READ NOW
+                      </Link>
+                      
+                      <button className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-full font-bold text-sm lg:text-base backdrop-blur-md transition-all duration-300">
+                        <Bookmark className="w-4 h-4 lg:w-5 lg:h-5" />
+                        <span className="hidden sm:inline">SAVE TO LIBRARY</span>
+                        <span className="sm:hidden">SAVE</span>
+                      </button>
+                    </div>
+                  </div>
 
-          <div className="flex flex-wrap items-center gap-4 lg:gap-8 pt-2 lg:pt-6">
-            <Link
-              href={`/comic/${featured.id}`}
-              className="group relative bg-slate-100 text-black px-8 py-4 lg:px-14 lg:py-6 rounded-full font-bold text-[10px] lg:text-xs tracking-[0.2em] overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
-            >
-              <span className="relative z-10 flex items-center gap-2 lg:gap-3">
-                <Play className="w-4 h-4 lg:w-5 lg:h-5 fill-current" />
-                START READING
-              </span>
-            </Link>
-            
-            <button className="group flex items-center gap-3 lg:gap-4 text-slate-100/60 hover:text-sky-500 transition-all font-bold text-[10px] lg:text-xs tracking-[0.2em]">
-              <div className="w-10 h-10 lg:w-14 lg:h-14 rounded-full border border-slate-700/50 flex items-center justify-center group-hover:border-sky-500/50 group-hover:bg-sky-500/5 transition-all">
-                <Bookmark className="w-4 h-4 lg:w-6 lg:h-6 group-hover:fill-current" />
+                  {/* Poster Area */}
+                  <div className="lg:col-span-5 relative flex justify-center lg:justify-end order-1 lg:order-2">
+                    <div className="relative group w-3/5 sm:w-1/2 lg:w-[320px] aspect-[3/4] rounded-2xl lg:rounded-[2rem] overflow-hidden shadow-2xl lg:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10">
+                      <img 
+                        src={featured.cover_url} 
+                        alt={featured.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
-              <span className="hidden sm:inline">SAVE TO LIBRARY</span>
-              <span className="sm:hidden">SAVE</span>
-            </button>
+            ))}
           </div>
         </div>
 
-        {/* Poster Area */}
-        <div className="lg:col-span-5 relative flex flex-col lg:flex-row items-center justify-end gap-4 lg:gap-8 mt-6 lg:mt-0">
-          <div className="hidden lg:block relative group w-full max-w-[240px] lg:max-w-[380px]">
-            {/* Glow Effect */}
-            <div className="absolute -inset-20 bg-sky-500/20 blur-[120px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse"></div>
-            
-            <div className="relative aspect-[3/4] w-full rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] border-[12px] border-slate-100/5 transform transition-all duration-1000 group-hover:-translate-y-4">
-              <img 
-                src={featured.cover_url} 
-                alt={featured.title}
-                className="w-full h-full object-cover transition-transform duration-1000" 
-                referrerPolicy="no-referrer"
+        {/* Navigation & Pagination */}
+        <div className="flex items-center justify-between lg:justify-start lg:gap-8 mt-8 lg:mt-12 w-full lg:w-auto">
+          {/* Dots */}
+          <div className="flex items-center gap-2 lg:gap-3">
+            {featuredComics.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => scrollTo(index)}
+                className={cn(
+                  "h-1.5 lg:h-2 rounded-full transition-all duration-300",
+                  selectedIndex === index ? "w-6 lg:w-8 bg-sky-500" : "w-1.5 lg:w-2 bg-white/20 hover:bg-white/40"
+                )}
+                aria-label={`Go to slide ${index + 1}`}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            </div>
+            ))}
           </div>
 
-          {/* Thumbnail Selector */}
-          <div className="flex flex-row lg:flex-col gap-4 lg:gap-3 shrink-0 z-20 overflow-x-auto lg:overflow-visible w-full lg:w-auto py-4 lg:py-4 px-4 lg:px-0 no-scrollbar">
-            {featuredComics.map((comic, idx) => (
-              <button
-                key={comic.id}
-                onClick={() => setFeaturedIndex(idx)}
-                className={cn(
-                  "group flex flex-col items-center gap-2 transition-all duration-300",
-                  featuredIndex === idx ? "scale-110 z-10" : "opacity-50 hover:opacity-100 hover:scale-105"
-                )}
-              >
-                <div className={cn(
-                  "relative flex-shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-2xl overflow-hidden border-2 transition-all duration-300",
-                  featuredIndex === idx 
-                    ? "border-sky-500" 
-                    : "border-slate-700/50"
-                )}>
-                  <img 
-                    src={comic.cover_url} 
-                    alt={comic.title}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <span className="lg:hidden text-[9px] font-bold text-slate-300 line-clamp-1 w-16 sm:w-20 text-center">
-                  {comic.title}
-                </span>
-              </button>
-            ))}
+          {/* Arrows (Desktop primarily) */}
+          <div className="hidden lg:flex items-center gap-2">
+            <button
+              onClick={scrollPrev}
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-sky-500/50 transition-all backdrop-blur-md disabled:opacity-50"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={scrollNext}
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-sky-500/50 transition-all backdrop-blur-md disabled:opacity-50"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>

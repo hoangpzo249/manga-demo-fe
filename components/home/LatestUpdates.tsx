@@ -33,12 +33,11 @@ export default function LatestUpdates({ comics }: LatestUpdatesProps) {
   const newReleases = comics.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <section className="relative border border-slate-700/30 rounded-3xl p-5 md:p-6 bg-black/20 backdrop-blur-sm">
-      <div className="absolute -left-20 top-0 w-64 h-64 bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+    <section className="relative w-full">
       <SectionHeader title="Latest Updates" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
         {newReleases.map((comic) => (
-          <MangaCard key={comic.id} comic={comic} variant="long" />
+          <MangaCard key={comic.id} comic={comic} variant="update" />
         ))}
       </div>
       
